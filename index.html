@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת הספרים - גרסה גלובלית בענן</title>
+    <style>
+        /* הגדרת משתני צבע למצב כהה (ברירת מחדל) */
+        :root, html[data-theme="dark"] {
+            --bg-primary: #121212;
+            --bg-surface: #1e1e1e;
+            --bg-element: #2d2d2d;
+            --text-main: #ffffff;
+            --text-muted: #aaaaaa;
+            --accent: #4a90e2;
+            --accent-hover: #357abd;
+            --danger: #d9534f;
+            --success: #5cb85c;
+            --warning: #f0ad4e;
+            --border: #333333;
+        }
+
+        /* הגדרת משתני צבע למצב בהיר */
+        html[data-theme="light"] {
+            --bg-primary: #f5f6fa;
+            --bg-surface: #ffffff;
+            --bg-element: #f0f2f5;
+            --text-main: #222222;
+            --text-muted: #666666;
+            --accent: #357abd;
+            --accent-hover: #2a6199;
+            --danger: #d9534f;
+            --success: #4cae4c;
+            --warning: #f0ad4e;
+            --border: #dddddd;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #auth-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, var(--bg-primary), var(--bg-surface));
+        }
+
+        .auth-container {
+            background-color: var(--bg-surface);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 400px;
+            border: 1px solid var(--border);
+        }
+
+        .auth-title {
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--bg-element);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-main);
+            font-size: 16px;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .btn-primary { background-color: var(--accent); color: white; }
+        .btn-primary:hover { background-color: var(--accent-hover); }
+        .btn-secondary { background-color: var(--bg-element); color: var(--text-main); border: 1px solid var(--border); }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-success { background-color: var(--success); color: white; }
+        
+        .btn-theme { 
+            background-color: var(--bg-element); 
+            color: var(--text-main); 
+            width: 100%; 
+            border: 1px solid var(--border); 
+            padding: 10px; 
+            margin-bottom: 20px; 
+            border-radius: 6px; 
+            font-size: 14px; 
+            cursor: pointer; 
+            font-weight: bold;
+        }
+
+        #app-screen {
+            display: none;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+
+        .sidebar {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 240px;
+            background-color: var(--bg-surface);
+            border-inline-end: 1px solid var(--border);
+            padding: 20px 10px;
+            z-index: 10;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .sidebar-brand {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--accent);
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            text-align: center;
+        }
+
+        .sidebar-menu { list-style: none; flex: 1; }
+
+        .sidebar-item {
+            padding: 14px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            color: var(--text-muted);
+            font-size: 16px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-item:hover, .sidebar-item.active {
+            background-color: var(--bg-element);
+            color: var(--text-main);
+        }
+
+        .sidebar-item.admin-only { border-right: 3px solid var(--warning); background-color: rgba(240, 173, 78, 0.05); }
+        .sidebar-item.super-only { border-right: 3px solid var(--danger); background-color: rgba(217, 83, 79, 0.05); }
+
+        .main-content {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 240px;
+            background-color: var(--bg-primary);
+            overflow-y: auto;
+            padding: 30px;
+        }
+
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        .view-title {
+            font-size: 28px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .layout-columns-two {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .layout-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--bg-element);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-main);
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .card-title { font-size: 18px; font-weight: bold; color: var(--accent); }
+        
+        .rating-box {
+            background-color: var(--bg-element);
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .rating-interactive {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 8px;
+        }
+
+        .rating-select {
+            padding: 4px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .chat-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            height: calc(100vh - 120px);
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .chat-sidebar { border-left: 1px solid var(--border); overflow-y: auto; background-color: var(--bg-surface); }
+        .chat-list-item { padding: 15px; border-bottom: 1px solid var(--border); cursor: pointer; color: var(--text-main); }
+        .chat-list-item:hover, .chat-list-item.active { background-color: var(--bg-element); }
+        .chat-main { display: flex; flex-direction: column; height: 100%; background-color: var(--bg-primary); }
+        
+        .chat-header {
+            padding: 15px;
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            font-weight: bold;
+        }
+
+        .chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        
+        .msg { max-width: 70%; padding: 10px 14px; border-radius: 8px; font-size: 15px; }
+        .msg.incoming { background-color: var(--bg-surface); color: var(--text-main); align-self: flex-start; border: 1px solid var(--border); }
+        .msg.outgoing { background-color: var(--accent); color: white; align-self: flex-end; }
+        .msg.system { background-color: var(--bg-element); color: var(--text-muted); align-self: center; text-align: center; font-size: 13px; border: 1px solid var(--border); }
+
+        .chat-input-area { padding: 15px; background-color: var(--bg-surface); border-top: 1px solid var(--border); display: flex; gap: 10px; }
+        .chat-input-area input { flex: 1; padding: 12px; background-color: var(--bg-element); border: 1px solid var(--border); border-radius: 6px; color: var(--text-main); }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 100; justify-content: center; align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--bg-surface); padding: 25px; border-radius: 8px;
+            width: 90%; max-width: 400px; border: 1px solid var(--border);
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 15px; }
+        th, td { padding: 10px; text-align: right; border-bottom: 1px solid var(--border); color: var(--text-main); font-size: 13px; }
+        th { background-color: var(--bg-element); color: var(--accent); }
+
+        .history-list { list-style: none; height: calc(100vh - 180px); overflow-y: auto; background: var(--bg-surface); padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
+        .history-item { font-size: 14px; padding: 10px; border-bottom: 1px solid var(--border); color: var(--text-main); }
+        .history-item:last-child { border-bottom: none; }
+        .history-date { font-weight: bold; color: var(--accent); margin-left: 10px; }
+        
+        .action-flex-btns {
+            display: flex;
+            gap: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="auth-screen">
+        <div class="auth-container">
+            <button class="btn-theme" onclick="toggleTheme()" id="auth-theme-btn">☀️ מעבר למצב בהיר</button>
+            <div class="auth-title">התחברות למערכת (ענן)</div>
+            <div class="form-group">
+                <label>שם משתמש:</label>
+                <input type="text" id="auth-username" placeholder="הכנס שם משתמש">
+            </div>
+            <div class="form-group">
+                <label>סיסמה:</label>
+                <input type="password" id="auth-password" placeholder="הכנס סיסמה">
+            </div>
+            <div class="auth-buttons">
+                <button class="btn btn-primary" onclick="handleLogin()">התחברות</button>
+                <button class="btn btn-secondary" onclick="handleRegister()">הרשמה</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-screen">
+        <div class="sidebar">
+            <div style="width: 100%;">
+                <div class="sidebar-brand">BookMatch Cloud</div>
+                <button class="btn-theme" onclick="toggleTheme()" id="sidebar-theme-btn">☀️ מצב בהיר</button>
+                <ul class="sidebar-menu">
+                    <li class="sidebar-item active" onclick="switchView('profile')" id="menu-profile">פרופיל שלי</li>
+                    <li class="sidebar-item" onclick="switchView('books')" id="menu-books">ספרים</li>
+                    <li class="sidebar-item reg-only" onclick="switchView('users')" id="menu-users">קהילה וצ'אט</li>
+                    <li class="sidebar-item" onclick="switchView('chats')" id="menu-chats">שיחות ומענה</li>
+                    <li class="sidebar-item admin-only" onclick="switchView('manage-people')" id="menu-manage-people" style="display:none; margin-top: 20px;">ניהול אנשים</li>
+                    <li class="sidebar-item super-only" onclick="switchView('manage-books-panel')" id="menu-manage-books-panel" style="display:none;">ניהול ספרים</li>
+                    <li class="sidebar-item super-only" onclick="switchView('global-history')" id="menu-global-history" style="display:none; border-right: 3px solid var(--danger);">היסטוריה כללית</li>
+                </ul>
+            </div>
+            <button class="btn btn-danger" onclick="handleLogout()" style="width: 100%; margin-top: 15px; padding: 10px;">התנתק מהחשבון</button>
+        </div>
+
+        <div class="main-content">
+            <div id="view-profile" class="view-section active">
+                <div class="view-title"><span>הפרופיל שלי</span></div>
+                <div style="display: flex; flex-direction: column; gap: 20px; max-width: 600px;">
+                    <div class="card">
+                        <div style="margin-bottom: 15px;"><strong>שם משתמש:</strong> <span id="prof-name"></span></div>
+                        <div style="margin-bottom: 15px;"><strong>דרגת חשבון:</strong> <span id="prof-role"></span></div>
+                        <div style="margin-bottom: 15px;"><strong>תאריך הצטרפות:</strong> <span id="prof-date"></span></div>
+                        <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
+                        <h4 style="margin-bottom: 10px;">עדכון סיסמה</h4>
+                        <div class="form-group">
+                            <label>סיסמה חדשה:</label>
+                            <input type="password" id="edit-password" placeholder="הקלד סיסמה חדשה">
+                        </div>
+                        <button class="btn btn-primary" onclick="updateProfile()" style="margin-bottom: 15px;">שמור שינויים</button>
+                        
+                        <hr style="border: 0; border-top: 1px solid var(--border); margin: 10px 0;">
+                        <h4 style="color:var(--danger); margin-bottom: 5px;">אזור רגיש</h4>
+                        <button class="btn btn-danger" onclick="deleteOwnAccount()" style="width: 100%;">מחק את החשבון שלי לצמיתות</button>
+                    </div>
+
+                    <div class="card">
+                        <h4 style="margin-bottom: 12px;">היסטוריית הפעולות האישית שלי</h4>
+                        <ul class="history-list" id="personal-history-box" style="max-height: 200px;"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-books" class="view-section">
+                <div class="view-title">
+                    <span>מאגר הספרים והדירוגים הגלובלי</span>
+                    <button class="btn btn-success" onclick="openSuggestModal()" style="max-width: 180px;">הצע ספר חדש</button>
+                </div>
+                <div class="cards-grid" id="books-grid-container"></div>
+            </div>
+
+            <div id="view-chats" class="view-section">
+                <div class="view-title">
+                    <span>מערכת הודעות ופניות</span>
+                    <button class="btn btn-warning" id="reg-admin-chat-btn" onclick="startAdminChat()" style="max-width: 220px; display:none;">פתח שיחה עם אדמין</button>
+                </div>
+                <div class="chat-container">
+                    <div class="chat-sidebar" id="chat-threads-list"></div>
+                    <div class="chat-main">
+                        <div class="chat-header">
+                            <span id="active-chat-title">בחר שיחה מהרשימה</span>
+                        </div>
+                        <div class="chat-messages" id="chat-messages-box"></div>
+                        <div class="chat-input-area">
+                            <input type="text" id="chat-input-field" placeholder="הקלד הודעה כאן..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                            <button class="btn btn-primary" onclick="sendChatMessage()" style="max-width: 100px;">שלח</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-users" class="view-section">
+                <div class="view-title"><span>קהילת הקוראים</span></div>
+                <div class="cards-grid" id="users-grid-container"></div>
+            </div>
+
+            <div id="view-global-history" class="view-section">
+                <div class="view-title"><span>היסטוריית פעילות כלל-אתרית (Global Log)</span></div>
+                <ul class="history-list" id="global-history-box"></ul>
+            </div>
+
+            <div id="view-manage-people" class="view-section">
+                <div class="view-title"><span id="people-title-context">ניהול קהילה ואנשים</span></div>
+                <input type="text" id="people-search-input" class="search-box" placeholder="🔍 חפש משתמש או מנהל לפי שם משתמש..." oninput="renderManagePeoplePanel()">
+                
+                <div class="layout-columns-two">
+                    <div class="layout-column">
+                        <div style="background: var(--bg-surface); padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
+                            <h3 style="color: var(--accent); margin-bottom: 10px; font-size:16px;">חשבונות קוראים רגילים</h3>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>שם משתמש</th>
+                                        <th>סטטוס</th>
+                                        <th>פעולות ניהול</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="people-users-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="layout-column" id="super-admins-management-column" style="display: none;">
+                        <div style="background: var(--bg-surface); padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
+                            <h4 style="font-size:15px; margin-bottom:8px;">הוספת מנהל (Admin) חדש</h4>
+                            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
+                                <input type="text" id="new-admin-name" placeholder="שם משתמש למנהל" style="padding:8px; background:var(--bg-element); border:1px solid var(--border); color:var(--text-main); font-size:14px;">
+                                <input type="password" id="new-admin-pass" placeholder="סיסמה למנהל" style="padding:8px; background:var(--bg-element); border:1px solid var(--border); color:var(--text-main); font-size:14px;">
+                                <button class="btn btn-success" onclick="createAdminAccount()" style="padding:8px; font-size:14px;">צור מנהל חדש</button>
+                            </div>
+                            <h3 style="font-size:15px; margin-bottom:8px; color: var(--warning);">רשימת מנהלים (Admins)</h3>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>שם המנהל</th>
+                                        <th>סטטוס</th>
+                                        <th>פעולות</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="people-admins-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-manage-books-panel" class="view-section">
+                <div class="view-title"><span>ניהול ספרים ומאגר (SuperAdmin)</span></div>
+                <div class="layout-columns-two">
+                    <div class="layout-column">
+                        <div style="background: var(--bg-surface); padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
+                            <h3 style="color: var(--warning); margin-bottom: 10px; font-size:16px;">הצעות ספרים ממתינות מקוראים</h3>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>שם הספר</th>
+                                        <th>הוצע ע"י</th>
+                                        <th>פעולה</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="books-panel-suggestions-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="layout-column">
+                        <div style="background: var(--bg-surface); padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
+                            <h4 style="font-size:15px; margin-bottom:8px;">הוספת ספר ישירות למאגר</h4>
+                            <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                                <input type="text" id="panel-book-title-input" placeholder="שם ספר חדש..." style="padding:8px; background:var(--bg-element); border:1px solid var(--border); color:var(--text-main); flex:1; font-size:14px;">
+                                <button class="btn btn-primary" onclick="addBookDirectly()" style="padding:8px; font-size:14px;">הוסף</button>
+                            </div>
+                            <h3 style="font-size:15px; margin-bottom:8px; color: var(--accent);">מאגר הספרים הקיים במערכת</h3>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>שם הספר</th>
+                                        <th>מדדים</th>
+                                        <th>פעולה</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="books-panel-official-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="suggest-book-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 15px;">הצעת ספר למערכת</h3>
+            <div class="form-group">
+                <label>שם הספר המבוקש:</label>
+                <input type="text" id="suggest-book-title" placeholder="הכנס שם מלא של הספר">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-success" onclick="submitBookSuggestion()">שלח הצעה לאישור</button>
+                <button class="btn btn-secondary" onclick="closeSuggestModal()">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getFirestore, collection, doc, setDoc, getDoc, getDocs, 
+            updateDoc, deleteDoc, query, where, orderBy, addDoc 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // ==========================================
+        // ⚠️ הדבק פה את קוד ה-CONFIG האמיתי שקיבלת מ-Firebase console ⚠️
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // אתחול Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // משתנים גלובליים של המערכת
+        let currentUser = null;
+        let activeChatId = null;
+        const DB_THEME = 'bookmatch_theme_v10';
+
+        // פונקציית האש הצפנה קליינט
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // ניהול עיצוב
+        function initTheme() {
+            const savedTheme = localStorage.getItem(DB_THEME) || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeButtons(savedTheme);
+        }
+        window.toggleTheme = function() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem(DB_THEME, newTheme);
+            updateThemeButtons(newTheme);
+        }
+        function updateThemeButtons(theme) {
+            const text = theme === 'dark' ? '☀️ מעבר למצב בהיר' : '🌙 מעבר למצב כהה';
+            const authBtn = document.getElementById('auth-theme-btn');
+            const sidebarBtn = document.getElementById('sidebar-theme-btn');
+            if(authBtn) authBtn.innerText = text;
+            if(sidebarBtn) sidebarBtn.innerText = theme === 'dark' ? '☀️ מצב בהיר' : '🌙 מצב כהה';
+        }
+
+        // אתחול משתמש סופר-אדמין במידה ולא קיים בבסיס הנתונים הגלובלי
+        async function initDatabaseCore() {
+            const gadiRef = doc(db, "users", "gadischw");
+            const gadiSnap = await getDoc(gadiRef);
+            if (!gadiSnap.exists()) {
+                const hashedGadiPass = await hashPassword('Gadi4707');
+                await setDoc(gadiRef, {
+                    username: 'gadischw',
+                    passwordHash: hashedGadiPass,
+                    role: 'SuperAdmin',
+                    joinedAt: new Date().toLocaleDateString(),
+                    isSuspended: false
+                });
+            }
+        }
+
+        // פונקציית לוג פעילות גלובלית בענן
+        async function logAction(username, action) {
+            const timestamp = new Date().toLocaleString('he-IL');
+            await addDoc(collection(db, "history"), {
+                timestamp, username, action, createdAt: Date.now()
+            });
+        }
+
+        // הרשמה גלובלית
+        window.handleRegister = async function() {
+            const user = document.getElementById('auth-username').value.trim();
+            const pass = document.getElementById('auth-password').value;
+            if(!user || !pass) return alert("נא למלא את כל השדות");
+            if(pass.length < 6) return alert("הסיסמה חייבת להיות לפחות 6 תווים");
+
+            const userRef = doc(db, "users", user);
+            const userSnap = await getDoc(userRef);
+            if(userSnap.exists()) return alert("שם משתמש זה כבר תפוס במערכת העולמית");
+
+            const securedHash = await hashPassword(pass);
+            await setDoc(userRef, {
+                username: user, passwordHash: securedHash, role: 'Regular',
+                joinedAt: new Date().toLocaleDateString(), isSuspended: false
+            });
+
+            await logAction(user, "נרשם למערכת כמשתמש חדש");
+            alert("החשבון נוצר בענן בהצלחה! כעת בצע התחברות.");
+        }
+
+        // התחברות גלובלית
+        window.handleLogin = async function() {
+            const user = document.getElementById('auth-username').value.trim();
+            const pass = document.getElementById('auth-password').value;
+
+            const userRef = doc(db, "users", user);
+            const userSnap = await getDoc(userRef);
+            if(!userSnap.exists()) return alert("פרטי התחברות שגויים");
+
+            const userData = userSnap.data();
+            const inputHash = await hashPassword(pass);
+            if(userData.passwordHash !== inputHash) return alert("פרטי התחברות שגויים");
+
+            if(userData.isSuspended) return alert("חשבון זה הושעה מהענן. הגישה חסומה.");
+
+            currentUser = userData;
+            await logAction(currentUser.username, "התחבר למערכת");
+
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('app-screen').style.display = 'block';
+
+            if(currentUser.role === 'Regular') {
+                document.querySelectorAll('.reg-only').forEach(el => el.style.display = 'flex');
+                document.getElementById('reg-admin-chat-btn').style.display = 'block';
+                document.getElementById('menu-manage-people').style.display = 'none';
+                document.getElementById('menu-manage-books-panel').style.display = 'none';
+                document.getElementById('menu-global-history').style.display = 'none';
+            } else {
+                document.querySelectorAll('.reg-only').forEach(el => el.style.display = 'none');
+                document.getElementById('reg-admin-chat-btn').style.display = 'none';
+                if(currentUser.role === 'Admin' || currentUser.role === 'SuperAdmin') {
+                    document.getElementById('menu-manage-people').style.display = 'flex';
+                }
+                if(currentUser.role === 'SuperAdmin') {
+                    document.getElementById('menu-manage-books-panel').style.display = 'flex';
+                    document.getElementById('menu-global-history').style.display = 'flex';
+                }
+            }
+            switchView('profile');
+        }
+
+        window.handleLogout = async function() {
+            if(currentUser) await logAction(currentUser.username, "התנתק מהמערכת");
+            currentUser = null; activeChatId = null;
+            document.getElementById('auth-username').value = "";
+            document.getElementById('auth-password').value = "";
+            document.getElementById('app-screen').style.display = 'none';
+            document.getElementById('auth-screen').style.display = 'flex';
+        }
+
+        // מחיקה עצמית מאובטחת מהענן
+        window.deleteOwnAccount = async function() {
+            if (currentUser.role === 'SuperAdmin') {
+                return alert("אבטחת מערכת: מנהל ראשי (SuperAdmin) אינו יכול למחוק את החשבון של עצמו בשום מצב!");
+            }
+            if(!confirm("האם אתה בטוח שברצונך למחוק את החשבון שלך לצמיתות מהענן? הפעולה סופית!")) return;
+            
+            await deleteDoc(doc(db, "users", currentUser.username));
+            
+            // מחיקת הדירוגים שלו מהענן
+            const ratingsSnap = await getDocs(query(collection(db, "ratings"), where("username", "==", currentUser.username)));
+            ratingsSnap.forEach(async (rDoc) => { await deleteDoc(rDoc.ref); });
+
+            await logAction(currentUser.username, "מחק את החשבון של עצמו לצמיתות");
+            alert("חשבונך נמחק לצמיתות.");
+            handleLogout();
+        }
+
+        window.switchView = function(viewName) {
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+            
+            document.getElementById(`view-${viewName}`).classList.add('active');
+            const menuEl = document.getElementById(`menu-${viewName}`);
+            if(menuEl) menuEl.classList.add('active');
+
+            if(viewName === 'profile') renderProfileView();
+            if(viewName === 'books') renderBooksView();
+            if(viewName === 'chats') renderChatsView();
+            if(viewName === 'users') renderUsersList();
+            if(viewName === 'manage-people') renderManagePeoplePanel();
+            if(viewName === 'manage-books-panel') renderManageBooksPanel();
+            if(viewName === 'global-history') renderGlobalHistory();
+        }
+
+        async function renderProfileView() {
+            document.getElementById('prof-name').innerText = currentUser.username;
+            document.getElementById('prof-role').innerText = currentUser.role === 'Regular' ? 'משתמש רגיל' : currentUser.role;
+            document.getElementById('prof-date').innerText = currentUser.joinedAt;
+
+            const q = query(collection(db, "history"), where("username", "==", currentUser.username), orderBy("createdAt", "desc"));
+            const hSnap = await getDocs(q);
+            const pBox = document.getElementById('personal-history-box');
+            
+            if(hSnap.empty) {
+                pBox.innerHTML = `<li class="history-item">אין פריטי היסטוריה לחשבון זה.</li>`;
+            } else {
+                let html = '';
+                hSnap.forEach(doc => {
+                    const h = doc.data();
+                    html += `<li class="history-item"><span class="history-date">[${h.timestamp}]</span> ${h.action}</li>`;
+                });
+                pBox.innerHTML = html;
+            }
+        }
+
+        window.updateProfile = async function() {
+            const newPass = document.getElementById('edit-password').value;
+            if(newPass.length < 6) return alert("הסיסמה חייבת להיות לפחות 6 תווים");
+            
+            const secureHash = await hashPassword(newPass);
+            await updateDoc(doc(db, "users", currentUser.username), { passwordHash: secureHash });
+            
+            await logAction(currentUser.username, "עדכן ושינה את סיסמת החשבון שלו");
+            alert("הסיסמה עודכנה בענן בהצלחה!");
+            document.getElementById('edit-password').value = "";
+            renderProfileView();
+        }
+
+        async function renderBooksView() {
+            const container = document.getElementById('books-grid-container');
+            const booksSnap = await getDocs(collection(db, "books"));
+            const ratingsSnap = await getDocs(collection(db, "ratings"));
+            
+            let ratingsList = [];
+            ratingsSnap.forEach(d => ratingsList.push(d.data()));
+
+            let html = '';
+            booksSnap.forEach(bDoc => {
+                const b = bDoc.data();
+                b.id = bDoc.id;
+
+                const bookRatings = ratingsList.filter(r => r.bookId === b.id);
+                const readerCount = bookRatings.length;
+                let averageScore = 0;
+                if(readerCount > 0) {
+                    averageScore = (bookRatings.reduce((sum, r) => sum + r.score, 0) / readerCount).toFixed(1);
+                }
+
+                const userRating = bookRatings.find(r => r.username === currentUser.username);
+                const currentScore = userRating ? userRating.score : 0;
+
+                html += `
+                    <div class="card">
+                        <div><div class="card-title">${b.title}</div></div>
+                        <div class="rating-box">
+                            <div>📊 <strong>מדדי קריאה:</strong></div>
+                            <div style="margin-top: 4px;">קראו את הספר: <strong>${readerCount}</strong> קוראים</div>
+                            <div>ציון ממוצע: <strong>${averageScore > 0 ? averageScore + ' ⭐' : 'אין דירוגים'}</strong></div>
+                            <div class="rating-interactive">
+                                <label>הדירוג שלך:</label>
+                                <select class="rating-select" onchange="submitRating('${b.id}', this.value)">
+                                    <option value="0" ${currentScore === 0 ? 'selected' : ''}>לא קראתי / בחר</option>
+                                    <option value="1" ${currentScore === 1 ? 'selected' : ''}>1 - גרוע ⭐️</option>
+                                    <option value="2" ${currentScore === 2 ? 'selected' : ''}>2 - נחמד ⭐️⭐️</option>
+                                    <option value="3" ${currentScore === 3 ? 'selected' : ''}>3 - טוב ⭐️⭐️⭐️</option>
+                                    <option value="4" ${currentScore === 4 ? 'selected' : ''}>4 - מצוין ⭐️⭐️⭐️⭐️</option>
+                                    <option value="5" ${currentScore === 5 ? 'selected' : ''}>5 - חובה! ⭐️⭐️⭐️⭐️⭐️</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html || '<p>אין ספרים במערכת כרגע.</p>';
+        }
+
+        window.submitRating = async function(bookId, scoreStr) {
+            const score = parseInt(scoreStr);
+            const bDoc = await getDoc(doc(db, "books", bookId));
+            const bTitle = bDoc.exists() ? bDoc.data().title : "ספר כלשהו";
+
+            const rDocId = `${currentUser.username}_${bookId}`;
+            if(score > 0) {
+                await setDoc(doc(db, "ratings", rDocId), { bookId, username: currentUser.username, score });
+                await logAction(currentUser.username, `סימן שקרא ודירג את הספר "${bTitle}" בציון ${score}`);
+            } else {
+                await deleteDoc(doc(db, "ratings", rDocId));
+                await logAction(currentUser.username, `הסיר את סימון הקריאה שלו מהספר "${bTitle}"`);
+            }
+            renderBooksView();
+        }
+
+        window.openSuggestModal = function() { document.getElementById('suggest-book-modal').style.display = 'flex'; }
+        window.closeSuggestModal = function() { document.getElementById('suggest-book-modal').style.display = 'none'; }
+        
+        window.submitBookSuggestion = async function() {
+            const title = document.getElementById('suggest-book-title').value.trim();
+            if(!title) return alert("נא להזין את שם הספר");
+
+            await addDoc(collection(db, "suggestions"), { title, suggestedBy: currentUser.username });
+            await logAction(currentUser.username, `שלח הצעה להוספת הספר החדש: "${title}"`);
+            alert("הצעתך נשלחה בהצלחה לענן וממתינה לאישור.");
+            document.getElementById('suggest-book-title').value = "";
+            closeSuggestModal();
+        }
+
+        window.startAdminChat = async function() {
+            const q = query(collection(db, "chats"), where("user", "==", currentUser.username));
+            const snap = await getDocs(q);
+            if(snap.empty) {
+                const newChatRef = await addDoc(collection(db, "chats"), {
+                    user: currentUser.username,
+                    messages: [{sender: 'System', text: 'פנייתך נפתחה בענן, ממתין למענה מנהל.'}]
+                });
+                activeChatId = newChatRef.id;
+                await logAction(currentUser.username, "פתח קריאת שירות חדשה עם צוות המנהלים");
+            } else {
+                activeChatId = snap.docs[0].id;
+            }
+            switchView('chats');
+        }
+
+        async function renderChatsView() {
+            const list = document.getElementById('chat-threads-list');
+            const snap = await getDocs(collection(db, "chats"));
+            let html = '';
+            snap.forEach(d => {
+                const c = d.data();
+                if(currentUser.role === 'Regular' && c.user !== currentUser.username) return;
+                html += `<div class="chat-list-item ${activeChatId === d.id ? 'active' : ''}" onclick="window.loadActiveChatThread('${d.id}')">שיחה מאת: ${c.user}</div>`;
+            });
+            list.innerHTML = html;
+        }
+
+        window.loadActiveChatThread = async function(id) {
+            activeChatId = id;
+            const cSnap = await getDoc(doc(db, "chats", id));
+            if(!cSnap.exists()) return;
+            const c = cSnap.data();
+            document.getElementById('active-chat-title').innerText = `שיחה עם ${c.user}`;
+            const box = document.getElementById('chat-messages-box');
+            box.innerHTML = c.messages.map(m => `
+                <div class="msg ${m.sender === 'System' ? 'system' : (m.sender === currentUser.username ? 'outgoing' : 'incoming')}">
+                    <strong>${m.sender}:</strong> ${m.text}
+                </div>
+            `).join('');
+            renderChatsView();
+        }
+
+        window.sendChatMessage = async function() {
+            const input = document.getElementById('chat-input-field');
+            if(!input.value.trim() || !activeChatId) return;
+            
+            const chatRef = doc(db, "chats", activeChatId);
+            const chatSnap = await getDoc(chatRef);
+            if(chatSnap.exists()) {
+                const msgs = chatSnap.data().messages;
+                msgs.push({ sender: currentUser.username, text: input.value });
+                await updateDoc(chatRef, { messages: msgs });
+            }
+            input.value = "";
+            loadActiveChatThread(activeChatId);
+        }
+
+        async function renderUsersList() {
+            const container = document.getElementById('users-grid-container');
+            const snap = await getDocs(collection(db, "users"));
+            let html = '';
+            snap.forEach(d => {
+                const u = d.data();
+                if(u.username !== currentUser.username && u.role === 'Regular') {
+                    html += `<div class="card"><div class="card-title">${u.username}</div><p style="color:var(--text-muted); font-size:14px;">חבר בקהילה הגלובלית</p></div>`;
+                }
+            });
+            container.innerHTML = html || '<p>אין חברים נוספים בקהילה כרגע.</p>';
+        }
+
+        async function renderManagePeoplePanel() {
+            const queryStr = document.getElementById('people-search-input').value.toLowerCase().trim();
+            const snap = await getDocs(collection(db, "users"));
+            
+            document.getElementById('people-title-context').innerText = currentUser.role === 'SuperAdmin' ? 'ניהול אנשים ומנהלים (SuperAdmin)' : 'ניהול אנשים וקהילה (Admin)';
+
+            const usersTbody = document.getElementById('people-users-table-body');
+            const adminsTbody = document.getElementById('people-admins-table-body');
+            
+            let regsHtml = '';
+            let adminsHtml = '';
+
+            snap.forEach(d => {
+                const u = d.data();
+                if(!u.username.toLowerCase().includes(queryStr)) return;
+
+                const statusText = u.isSuspended ? `<span style="color:var(--danger); font-weight:bold;">מושעה</span>` : `<span style="color:var(--success);">פעיל</span>`;
+                const toggleBtn = u.isSuspended ? 
+                    `<button class="btn btn-success" onclick="toggleUserSuspension('${u.username}', false)" style="padding: 3px 6px; font-size:11px;">בטל השעיה</button>` :
+                    `<button class="btn btn-warning" onclick="toggleUserSuspension('${u.username}', true)" style="padding: 3px 6px; font-size:11px;">השעה</button>`;
+
+                const rowHtml = `
+                    <tr>
+                        <td><strong>${u.username}</strong></td>
+                        <td>${statusText}</td>
+                        <td>
+                            <div class="action-flex-btns">
+                                ${toggleBtn}
+                                <button class="btn btn-danger" onclick="executeUserDeletion('${u.username}', '${u.role}')" style="padding: 3px 6px; font-size:11px;">מחק</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+
+                if(u.role === 'Regular') regsHtml += rowHtml;
+                if(u.role === 'Admin') adminsHtml += rowHtml;
+            });
+
+            usersTbody.innerHTML = regsHtml || '<tr><td colspan="3" style="text-align:center;">אין נתונים</td></tr>';
+            
+            const superColumn = document.getElementById('super-admins-management-column');
+            if (currentUser.role === 'SuperAdmin') {
+                superColumn.style.display = 'flex';
+                adminsTbody.innerHTML = adminsHtml || '<tr><td colspan="3" style="text-align:center;">אין מנהלים</td></tr>';
+            } else {
+                superColumn.style.display = 'none';
+            }
+        }
+
+        window.toggleUserSuspension = async function(username, shouldSuspend) {
+            const uRef = doc(db, "users", username);
+            const uSnap = await getDoc(uRef);
+            if(!uSnap.exists()) return;
+            const u = uSnap.data();
+
+            if (u.role === 'SuperAdmin') return alert("שגיאה: לא ניתן להשעות את ה-SuperAdmin!");
+            if (currentUser.role === 'Admin' && u.role !== 'Regular') return alert("אין לך הרשאה לפעול על דרג ניהולי זה.");
+
+            await updateDoc(uRef, { isSuspended: shouldSuspend });
+            const word = shouldSuspend ? "השעה מהמערכת את" : "ביטל את ההשעיה של";
+            await logAction(currentUser.username, `${word} החשבון: "${username}"`);
+            alert("הסטטוס עודכן בענן.");
+            renderManagePeoplePanel();
+        }
+
+        window.executeUserDeletion = async function(username, roleType) {
+            if (roleType === 'SuperAdmin') return alert("שגיאה מאובטחת: חסימת מחיקה של ה-SuperAdmin הראשי.");
+            if (currentUser.role === 'Admin' && roleType !== 'Regular') return alert("אין לך הרשאה למחוק מנהלים.");
+            if(!confirm(`האם למחוק סופית את החשבון של ${username} מהענן?`)) return;
+
+            await deleteDoc(doc(db, "users", username));
+            await logAction(currentUser.username, `מחק מהענן את המשתמש/מנהל: "${username}"`);
+            alert("החשבון הוסר.");
+            renderManagePeoplePanel();
+        }
+
+        async function renderManageBooksPanel() {
+            if(currentUser.role !== 'SuperAdmin') return;
+
+            const sugTbody = document.getElementById('books-panel-suggestions-tbody');
+            const sugSnap = await getDocs(collection(db, "suggestions"));
+            let sugHtml = '';
+            sugSnap.forEach(d => {
+                const s = d.data();
+                sugHtml += `
+                    <tr>
+                        <td><strong>${s.title}</strong></td>
+                        <td>${s.suggestedBy}</td>
+                        <td>
+                            <div class="action-flex-btns">
+                                <button class="btn btn-success" onclick="approveBookSuggestion('${d.id}', '${s.title}')" style="padding: 2px 6px; font-size:11px;">אשר</button>
+                                <button class="btn btn-danger" onclick="rejectBookSuggestion('${d.id}', '${s.title}')" style="padding: 2px 6px; font-size:11px;">דחה</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            sugTbody.innerHTML = sugHtml || '<tr><td colspan="3" style="text-align:center;">אין הצעות ממתינות</td></tr>';
+
+            const offTbody = document.getElementById('books-panel-official-tbody');
+            const bSnap = await getDocs(collection(db, "books"));
+            let offHtml = '';
+            bSnap.forEach(d => {
+                const b = d.data();
+                offHtml += `
+                    <tr>
+                        <td><strong>${b.title}</strong></td>
+                        <td style="font-size:11px; color:var(--text-muted);">ספר רשמי במאגר</td>
+                        <td><button class="btn btn-danger" onclick="removeBookDirectly('${d.id}', '${b.title}')" style="padding: 2px 6px; font-size:11px;">מחק</button></td>
+                    </tr>
+                `;
+            });
+            offTbody.innerHTML = offHtml || '<tr><td colspan="3" style="text-align:center;">אין ספרים במאגר</td></tr>';
+        }
+
+        window.approveBookSuggestion = async function(id, title) {
+            await addDoc(collection(db, "books"), { title });
+            await deleteDoc(doc(db, "suggestions", id));
+            await logAction(currentUser.username, `אישר את הספר המומלץ "${title}" והוסיפו למאגר`);
+            renderManageBooksPanel();
+        }
+
+        window.rejectBookSuggestion = async function(id, title) {
+            await deleteDoc(doc(db, "suggestions", id));
+            await logAction(currentUser.username, `דחה את הצעת הספר החדש: "${title}"`);
+            renderManageBooksPanel();
+        }
+
+        window.addBookDirectly = async function() {
+            const title = document.getElementById('panel-book-title-input').value.trim();
+            if(!title) return alert("הזן שם ספר");
+
+            await addDoc(collection(db, "books"), { title });
+            await logAction(currentUser.username, `הוסיף ספר חדש ישירות למערכת: "${title}"`);
+            document.getElementById('panel-book-title-input').value = "";
+            renderManageBooksPanel();
+        }
+
+        window.removeBookDirectly = async function(bookId, bookTitle) {
+            if(!confirm(`האם למחוק את הספר "${bookTitle}" מהענן?`)) return;
+            await deleteDoc(doc(db, "books", bookId));
+            await logAction(currentUser.username, `מחק מהמאגר את הספר: "${bookTitle}"`);
+            renderManageBooksPanel();
+        }
+
+        window.createAdminAccount = async function() {
+            const name = document.getElementById('new-admin-name').value.trim();
+            const pass = document.getElementById('new-admin-pass').value;
+            if(!name || !pass) return alert("מלא את כל שדות האדמין");
+            if(pass.length < 6) return alert("הסיסמה חייבת להיות לפחות 6 תווים");
+            
+            const uRef = doc(db, "users", name);
+            const uSnap = await getDoc(uRef);
+            if(uSnap.exists()) return alert("שם משתמש זה כבר קיים בענן");
+
+            const secureAdminHash = await hashPassword(pass);
+            await setDoc(uRef, {
+                username: name, passwordHash: secureAdminHash, role: 'Admin',
+                joinedAt: new Date().toLocaleDateString(), isSuspended: false
+            });
+            
+            await logAction(currentUser.username, `יצר מנהל (Admin) חדש במערכת: "${name}"`);
+            alert(`מנהל חדש בשם ${name} נוצר בהצלחה!`);
+            document.getElementById('new-admin-name').value = "";
+            document.getElementById('new-admin-pass').value = "";
+            renderManagePeoplePanel();
+        }
+
+        async function renderGlobalHistory() {
+            const gBox = document.getElementById('global-history-box');
+            const q = query(collection(db, "history"), orderBy("createdAt", "desc"));
+            const snap = await getDocs(q);
+            let html = '';
+            snap.forEach(d => {
+                const h = d.data();
+                html += `<li class="history-item"><span class="history-date">[${h.timestamp}]</span> <strong>${h.username}</strong>: ${h.action}</li>`;
+            });
+            gBox.innerHTML = html || '<li class="history-item">אין פריטי פעילות מוקלטים.</li>';
+        }
+
+        // הפעלה ראשונית
+        document.addEventListener("DOMContentLoaded", function() {
+            initTheme();
+            initDatabaseCore().then(() => {
+                console.log("Firebase Global Database Core Online.");
+            });
+        });
+    </script>
+</body>
+</html>
