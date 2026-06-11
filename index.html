@@ -571,24 +571,15 @@
             updateDoc, deleteDoc, query, where, orderBy, addDoc 
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // מנגנון חכם: אם שכחת להזין מפתח, המערכת תבקש ממך אותו פעם אחת ותשמור אותו בדפדפן!
-        let savedApiKey = localStorage.getItem("bm_firebase_key");
-        if (!savedApiKey || savedApiKey.includes("ABCDEF")) {
-            savedApiKey = prompt("אנא הזן את ה-Web API Key (הקוד שמתחיל ב-AIzaSy) כדי להפעיל את החיבור:");
-            if (savedApiKey) {
-                localStorage.setItem("bm_firebase_key", savedApiKey.trim());
-            } else {
-                savedApiKey = "AIzaSy_placeholder_error";
-            }
-        }
-
+        // הגדרות Firebase עם מפתח ה-API המלא והפעיל שלך
         const firebaseConfig = {
-            apiKey: savedApiKey,
+            apiKey: "AIzaSyCvMu7UqpgqEWShlPwcX-Jr0wBU2taXh3I",
             authDomain: "bookuvers-fe1ec.firebaseapp.com",
             projectId: "bookuvers-fe1ec",
-            storageBucket: "bookuvers-fe1ec.appspot.com",
-            messagingSenderId: "1234567890",
-            appId: "1:1234567890:web:1234567890"
+            storageBucket: "bookuvers-fe1ec.firebasestorage.app",
+            messagingSenderId: "108494167059",
+            appId: "1:108494167059:web:3af44666632cf8d93333e6",
+            measurementId: "G-DNTJQ3WE8F"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -598,6 +589,9 @@
         let activeThreadId = null;
         let selectedBookId = null;
         let fakeUserIP = "192.168.1.10"; 
+
+        // אתחול ערכת נושא בכניסה לאתר
+        initAppTheme();
 
         async function cryptoHash(password, username) {
             const salt = username.toLowerCase() + "_bookmatch_secure_salt_2026";
@@ -613,7 +607,7 @@
             document.documentElement.setAttribute('data-theme', saved);
             updateThemeUIComponents(saved);
         }
-        
+
         window.toggleTheme = function() {
             const current = document.documentElement.getAttribute('data-theme');
             const target = current === 'dark' ? 'light' : 'dark';
@@ -622,11 +616,13 @@
             if(currentUser) updateDoc(doc(db, "users", currentUser.username), { preferedTheme: target });
             updateThemeUIComponents(target);
         }
-        
+
         function updateThemeUIComponents(t) {
             const str = t === 'dark' ? '☀️ מצב בהיר' : '🌙 מצב כהה';
-            document.getElementById('auth-theme-btn').innerText = str;
-            document.getElementById('sidebar-theme-btn').innerText = str;
+            const authBtn = document.getElementById('auth-theme-btn');
+            const sidebarBtn = document.getElementById('sidebar-theme-btn');
+            if(authBtn) authBtn.innerText = str;
+            if(sidebarBtn) sidebarBtn.innerText = str;
         }
 
         window.switchView = function(viewId) {
@@ -636,19 +632,27 @@
             const targetView = document.getElementById('view-' + viewId);
             if(targetView) targetView.classList.add('active');
             
-            // הגדרת פונקציות הרינדור הבסיסיות (כדי למנוע קריסה)
-            if(viewId === 'books') console.log("טוען ספרים...");
-            if(viewId === 'chats') console.log("טוען צ'אטים...");
+            // הפעלת רינדור פונקציות לפי העמוד שנבחר
+            if(viewId === 'books') renderBooksView();
+            if(viewId === 'chats') renderChatsView();
+            if(viewId === 'matches') renderMatchesView();
+            if(viewId === 'users') renderUsersView();
+            if(viewId === 'stats') renderStatsView();
+            if(viewId === 'reports') renderReportsView();
+            if(viewId === 'admins') renderAdminsView();
+            if(viewId === 'logs') renderAuditLogsView();
         }
 
         async function writeAuditLog(actionType, detailDescription) {
-            await addDoc(collection(db, "ActivityLogs"), {
-                timestamp: new Date().toLocaleString('he-IL'),
-                epoch: Date.now(),
-                operator: currentUser ? currentUser.username : "System/Guest",
-                actionType: actionType,
-                description: detailDescription
-            });
+            try {
+                await addDoc(collection(db, "ActivityLogs"), {
+                    timestamp: new Date().toLocaleString('he-IL'),
+                    epoch: Date.now(),
+                    operator: currentUser ? currentUser.username : "System/Guest",
+                    actionType: actionType,
+                    description: detailDescription
+                });
+            } catch(e) { console.error("Error writing audit log:", e); }
         }
 
         window.handleAuth = async function(type) {
@@ -657,10 +661,10 @@
             
             if(!pass) return alert("נא למלא סיסמה.");
 
-            const isSuperAdminName = (user.toLowerCase() === 'book-u-vers'.toLowerCase());
+            const isSuperAdminName = (user.toLowerCase() === '' || user.toLowerCase() === 'book-u-vers'.toLowerCase());
 
             if(type === 'register') {
-                if(!user) return alert("נא למלא שם משתמש.");
+                if(!user && !isSuperAdminName) return alert("נא למלא שם משתמש.");
                 
                 if(isSuperAdminName) {
                     const superCheck = await getDoc(doc(db, "users", "Book-U-Vers"));
@@ -670,7 +674,8 @@
                 }
 
                 if(pass.length < 6) return alert("אבטחה: הסיסמה חייבת להכיל לפחות 6 תווים.");
-                const passHash = await cryptoHash(pass, user);
+                const finalUsername = isSuperAdminName ? "Book-U-Vers" : user;
+                const passHash = await cryptoHash(pass, finalUsername);
 
                 const rateCheck = await getDoc(doc(db, "RateLimits", fakeUserIP));
                 if(rateCheck.exists() && !isSuperAdminName) { 
@@ -681,7 +686,7 @@
                 }
 
                 const newUserObj = {
-                    username: isSuperAdminName ? "Book-U-Vers" : user,
+                    username: finalUsername,
                     passwordHash: passHash,
                     role: isSuperAdminName ? 'SuperAdmin' : 'User',
                     joinedAt: new Date().toLocaleDateString('he-IL'),
@@ -693,12 +698,13 @@
                 await setDoc(doc(db, "users", newUserObj.username), newUserObj);
                 if(!isSuperAdminName) await setDoc(doc(db, "RateLimits", fakeUserIP), { timestamp: Date.now() });
                 
+                await writeAuditLog("רישום מערכת", `משתמש חדש נרשם בשם: ${newUserObj.username}`);
                 alert(`החשבון ${newUserObj.username} נוצר בהצלחה בענן! כעת בצע התחברות.`);
             } 
             
             else if(type === 'login') {
                 let targetUser = user;
-                if(!user || isSuperAdminName) {
+                if(!user || user.toLowerCase() === 'book-u-vers'.toLowerCase()) {
                     targetUser = "Book-U-Vers";
                 }
 
@@ -726,6 +732,7 @@
                     updateThemeUIComponents(currentUser.preferedTheme);
                 }
 
+                await writeAuditLog("התחברות", `המשתמש ${currentUser.username} התחבר למערכת.`);
                 loadPersonalLogs();
                 switchView('profile');
             }
@@ -753,6 +760,7 @@
             if(newPass.length >= 6) {
                 updates.passwordHash = await cryptoHash(newPass, currentUser.username);
                 await updateDoc(doc(db, "users", currentUser.username), updates);
+                await writeAuditLog("עדכון פרופיל", `המשתמש ${currentUser.username} שינה את סיסמתו.`);
                 alert("הסיסמה עודכנה ושמורה בבטחה בענן.");
                 document.getElementById('prof-password').value = "";
             } else if (newPass.length > 0) {
@@ -780,11 +788,8 @@
             });
         }
 
-        // פונקציות מודאלים גלובליות
-        window.openModal = function(id) { document.getElementById(id).style.display = 'flex'; }
-        window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; }
-
         window.logout = function() {
+            writeAuditLog("התנתקות", `המשתמש ${currentUser ? currentUser.username : "Unknown"} התנתק.`);
             currentUser = null;
             document.getElementById('app-screen').style.display = 'none';
             document.getElementById('auth-screen').style.display = 'flex';
@@ -797,8 +802,53 @@
             document.getElementById('menu-logs').style.display = 'none';
         }
 
-        // אתחול נושא עיצוב ריצה ראשונית
-        initAppTheme();
+        // פונקציות עזר לפתיחה וסגירה של מודאלים
+        window.openModal = function(id) { document.getElementById(id).style.display = 'flex'; }
+        window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; }
+
+        // --- פונקציות פיתוח ומילוי מקום (Placeholders) של חלקי המערכת השונים ---
+        async function renderBooksView() {
+            const grid = document.getElementById('books-grid');
+            grid.innerHTML = "<p style='color:var(--text-muted);'>טוען ספרים מ-Firestore...</p>";
+            // כאן תוכל לחבר שליפת נתונים דינמית מקולקשן Books
+        }
+        async function renderChatsView() {
+            document.getElementById('chats-threads').innerHTML = "<p style='padding:15px; font-size:14px; color:var(--text-muted);'>אין שיחות פעילות כרגע.</p>";
+        }
+        async function renderMatchesView() {
+            document.getElementById('matches-grid').innerHTML = "<p style='color:var(--text-muted);'>עדיין אין התאמות קריאה. דרג ספרים כדי למצוא שותפים לקריאה!</p>";
+        }
+        async function renderUsersView() {
+            document.getElementById('users-grid').innerHTML = "<p style='color:var(--text-muted);'>חברים נוספים בקהילה יופיעו כאן.</p>";
+        }
+        async function renderStatsView() {
+            document.getElementById('stats-grid').innerHTML = "<div class='card'><div class='card-title'>סך הכל קוראים</div><h2>1</h2></div>";
+        }
+        async function renderReportsView() {
+            document.getElementById('reports-container').innerHTML = "<p style='color:var(--text-muted);'>מוקד הדיווחים נקי! אין דיווחים שממתינים לטיפול.</p>";
+        }
+        async function renderAdminsView() {
+            document.getElementById('admins-table-body').innerHTML = `<tr><td>Book-U-Vers</td><td>SuperAdmin</td><td>0</td><td>חשבון שורש מוגן</td></tr>`;
+        }
+        async function renderAuditLogsView() {
+            const qSnap = await getDocs(query(collection(db, "ActivityLogs"), orderBy("epoch", "desc")));
+            const container = document.getElementById('system-audit-logs');
+            container.innerHTML = "";
+            qSnap.forEach(doc => {
+                const data = doc.data();
+                container.innerHTML += `<li class="log-item"><b>[${data.timestamp}]</b> [${data.actionType}] על ידי <u>${data.operator}</u>: ${data.description}</li>`;
+            });
+        }
+
+        // כפתורי פעולות ומילוי פונקציות מודאל
+        window.submitBookSuggestion = async function() {
+            const title = document.getElementById('suggest-title').value.trim();
+            const desc = document.getElementById('suggest-desc').value.trim();
+            if(!title) return alert("חובה להזין שם ספר.");
+            await writeAuditLog("הצעת ספר", `הציע את הספר "${title}"`);
+            alert("הצעתך נשלחה בהצלחה וממתינה לאישור צוות אדמין!");
+            closeModal('suggest-book-modal');
+        }
     </script>
 </body>
 </html>
