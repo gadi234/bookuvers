@@ -17,8 +17,8 @@
             --success: #66bb6a;
             --warning: #ffa726;
             --border: #2a2a35;
-            --input-bg: #ffffff;
-            --input-text: #000000;
+            --input-bg: #22222b;
+            --input-text: #ffffff;
             --card-text: #ffffff;
         }
 
@@ -34,8 +34,8 @@
             --success: #388e3c;
             --warning: #f57c00;
             --border: #dbdbe7;
-            --input-bg: #16161a;
-            --input-text: #ffffff;
+            --input-bg: #ffffff;
+            --input-text: #1c1c24;
             --card-text: #000000;
         }
 
@@ -127,7 +127,7 @@
         }
 
         .btn-primary { background-color: var(--accent); color: white; }
-        .btn-secondary { background-color: var(--input-bg); color: var(--input-text); border: 1px solid var(--border); }
+        .btn-secondary { background-color: var(--bg-element); color: var(--text-main); border: 1px solid var(--border); }
         .btn-danger { background-color: var(--danger); color: white; }
         .btn-success { background-color: var(--success); color: white; }
         .btn-warning { background-color: var(--warning); color: black; }
@@ -396,8 +396,8 @@
                 <div class="card" style="margin-bottom: 30px;">
                     <h3>הוספת ספר למערכת</h3>
                     <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
-                        <input type="text" id="super-add-title" placeholder="שם הספר" style="padding:12px; border-radius:8px; border:1px solid var(--border);">
-                        <textarea id="super-add-desc" placeholder="תקציר הספר" rows="3" style="padding:12px; border-radius:8px; border:1px solid var(--border);"></textarea>
+                        <input type="text" id="super-add-title" placeholder="שם הספר">
+                        <textarea id="super-add-desc" placeholder="תקציר הספר" rows="3"></textarea>
                         <button class="btn btn-success" onclick="superAddBookDirectly()">פרסם ספר ישירות</button>
                     </div>
                 </div>
@@ -412,7 +412,7 @@
                     <div class="chat-main">
                         <div class="chat-messages" id="chat-msg-box">בחר שיחה מהרשימה</div>
                         <div class="chat-input-area">
-                            <input type="text" id="chat-input-msg" placeholder="הקלד הודעה..." style="flex:1; padding:12px; background:var(--input-bg); border:1px solid var(--border); color:var(--input-text); border-radius: 8px;">
+                            <input type="text" id="chat-input-msg" placeholder="הקלד הודעה..." style="flex:1;">
                             <button class="btn btn-primary" onclick="sendChatMsg()">שלח</button>
                         </div>
                     </div>
@@ -430,7 +430,7 @@
                     <button class="btn btn-secondary" id="lucky-user-btn" onclick="luckyRandomUser()">🎲 קורא אקראי</button>
                 </div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:25px;">
-                    <input type="text" id="user-search" placeholder="🔍 חפש לפי שם משתמש..." style="padding:12px; border-radius:8px; border:1px solid var(--border);">
+                    <input type="text" id="user-search" placeholder="🔍 חפש לפי שם משתמש...">
                     <button class="btn btn-primary" onclick="renderUsersView()">בצע סינון</button>
                 </div>
                 <div class="cards-grid" id="users-grid"></div>
@@ -520,24 +520,6 @@
         </div>
     </div>
 
-    <div id="edit-user-modal" class="modal">
-        <div class="modal-content">
-            <h2>עריכת חשבון משתמש</h2>
-            <div class="form-group" style="margin-top:15px;">
-                <label>שם משתמש:</label>
-                <input type="text" id="edit-user-username" readonly>
-            </div>
-            <div class="form-group">
-                <label>איפוס סיסמה:</label>
-                <input type="password" id="edit-user-password" placeholder="הזן סיסמה חדשה">
-            </div>
-            <div style="display:flex; gap:10px;">
-                <button class="btn btn-primary" onclick="saveUserEditByAdmin()">שמור שינויים</button>
-                <button class="btn btn-secondary" onclick="closeModal('edit-user-modal')">ביטול</button>
-            </div>
-        </div>
-    </div>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { 
@@ -561,9 +543,7 @@
         let selectedBookId = null;
         let activeChatRecipient = null;
         let chatUnsubscribe = null;
-        let selectedUserToEdit = null;
 
-        // סולם דרגות לצורך השוואה וסינון
         const roleHierarchy = { 'User': 0, 'Admin': 1, 'Admin+': 2, 'SuperAdmin': 3 };
 
         async function cryptoHash(password, username) {
@@ -595,7 +575,6 @@
         window.switchView = function(viewId) {
             const uRole = currentUser.role;
             
-            // הגבלות גישה למסכים לפי מדרג ההרשאות שהגדרת
             if (viewId === 'books' && uRole !== 'User') return alert("מסך מאגר ספרים פתוח לקוראים רגילים בלבד.");
             if (viewId === 'matches' && uRole !== 'User') return alert("מסך התאמות קריאה פתוח לקוראים רגילים בלבד.");
             if (viewId === 'stats' && uRole === 'User') return alert("אין לך הרשאה לצפות בסטטיסטיקות.");
@@ -670,7 +649,7 @@
                 const userData = userSnap.data();
                 
                 if(userData.passwordHash !== passHash) return alert("סיסמה שגויה.");
-                if(userData.isSuspended) return alert("חשבון זה מושעה.");
+                if(userData.isSuspended) return alert("חשבון זה מושעה על ידי צוות הניהול.");
 
                 currentUser = userData;
                 setupRoleBasedUI();
@@ -684,10 +663,8 @@
         function setupRoleBasedUI() {
             const role = currentUser.role;
             
-            // תצוגת כפתור מחיקת חשבון עצמי (חוק 1: כולם חוץ מסופר אדמין)
             document.getElementById('delete-own-acc-btn').style.display = (role === 'SuperAdmin') ? 'none' : 'block';
 
-            // ניווט לפי הרשאות המסכים שהגדרת
             document.getElementById('menu-books').style.display = (role === 'User') ? 'flex' : 'none';
             document.getElementById('menu-matches').style.display = (role === 'User') ? 'flex' : 'none';
             document.getElementById('lucky-user-btn').style.display = (role === 'User') ? 'block' : 'none';
@@ -727,7 +704,7 @@
             logout();
         }
 
-        // --- מאגר ספרים (רק רגילים) ---
+        // --- מאגר ספרים ---
         async function renderBooksView() {
             if(currentUser.role !== 'User') return;
             const snap = await getDocs(collection(db, "books"));
@@ -781,7 +758,7 @@
             closeModal('suggest-book-modal');
         }
 
-        // --- ניהול ספרים (סופר אדמין ואדמין+) ---
+        // --- ניהול ספרים ---
         async function renderSuperBooksManagementView() {
             if(!['Admin+', 'SuperAdmin'].includes(currentUser.role)) return;
             const snap = await getDocs(collection(db, "books"));
@@ -817,7 +794,7 @@
             renderSuperBooksManagementView();
         }
 
-        // --- קהילת משתמשים (עריכה פתוחה לאדמינים) ---
+        // --- קהילת משתמשים (ניהול חשבונות: מחיקה והשעיה) ---
         async function renderUsersView() {
             const search = document.getElementById('user-search').value.trim().toLowerCase();
             const snap = await getDocs(collection(db, "users"));
@@ -833,43 +810,46 @@
                 card.className = 'card';
                 
                 let actionButtons = '';
-                // רגילים יכולים להתחיל צ'אט או לדווח
                 if(currentUser.role === 'User') {
                     actionButtons = `
                         <button class="btn btn-primary" onclick="initiateChatWith('${user.username}')">💬 צ'אט</button>
                         <button class="btn btn-danger" onclick="reportUser('${user.username}')">🚨 דווח</button>
                     `;
                 } else {
-                    // אדמינים יכולים לערוך (חוק 5) ולהתחיל צ'אט עם כולם (חוק 4 של פעולות)
+                    // כל סוגי האדמינים יכולים לפתוח צ'אט עם כולם, למחוק או להשעות/לבטל השעיה
+                    const suspensionText = user.isSuspended ? "🔓 בטל השעיה" : "🚫 השעה משתמש";
                     actionButtons = `
-                        <button class="btn btn-warning" onclick="openAdminEditUserModal('${user.username}')">🛠️ ערוך חשבון</button>
-                        <button class="btn btn-primary" onclick="initiateChatWith('${user.username}')">💬 שיחת פיקוח</button>
+                        <button class="btn btn-primary" onclick="initiateChatWith('${user.username}')">💬 שיחה</button>
+                        <button class="btn btn-warning" onclick="toggleSuspendUser('${user.username}', ${user.isSuspended})">${suspensionText}</button>
+                        <button class="btn btn-danger" onclick="adminDeleteUserAccount('${user.username}')">🗑️ מחק חשבון</button>
                     `;
                 }
 
                 card.innerHTML = `
                     <div class="card-title">👤 ${user.username}</div>
-                    <p style="font-size:13px; color:var(--text-muted); margin-bottom:10px;">דרגה: ${user.role}</p>
-                    <div style="display:flex; gap:8px;">${actionButtons}</div>
+                    <p style="font-size:13px; color:var(--text-muted); margin-bottom:10px;">דרגה: ${user.role} ${user.isSuspended ? ' <b style="color:var(--danger);">(מושעה)</b>' : ''}</p>
+                    <div style="display:flex; flex-direction:column; gap:8px;">${actionButtons}</div>
                 `;
                 grid.appendChild(card);
             });
         }
 
-        window.openAdminEditUserModal = function(username) {
-            selectedUserToEdit = username;
-            document.getElementById('edit-user-username').value = username;
-            document.getElementById('edit-user-password').value = '';
-            openModal('edit-user-modal');
+        window.toggleSuspendUser = async function(username, currentStatus) {
+            if(currentUser.role === 'User') return;
+            const nextStatus = !currentStatus;
+            await updateDoc(doc(db, "users", username), { isSuspended: nextStatus });
+            await writeAuditLog("MANAGEMENT", `הסטטוס של ${username} שונה ל: ${nextStatus ? 'מושעה' : 'פעיל'}`);
+            alert(`החשבון של ${username} עודכן.`);
+            renderUsersView();
         }
 
-        window.saveUserEditByAdmin = async function() {
-            const newPass = document.getElementById('edit-user-password').value;
-            if(!newPass) return alert("הזן סיסמה.");
-            const newHash = await cryptoHash(newPass, selectedUserToEdit);
-            await updateDoc(doc(db, "users", selectedUserToEdit), { passwordHash: newHash });
-            alert("החשבון עודכן בהצלחה על ידי צוות הניהול.");
-            closeModal('edit-user-modal');
+        window.adminDeleteUserAccount = async function(username) {
+            if(currentUser.role === 'User') return;
+            if(!confirm(`האם אתה בטוח שברצונך למחוק לחלוטין את החשבון של ${username}?`)) return;
+            await deleteDoc(doc(db, "users", username));
+            await writeAuditLog("MANAGEMENT", `החשבון של המשתמש ${username} נמחק על ידי אדמין`);
+            alert(`החשבון של ${username} נמחק מהמערכת.`);
+            renderUsersView();
         }
 
         window.reportUser = async function(username) {
@@ -892,7 +872,7 @@
             initiateChatWith(list[Math.floor(Math.random() * list.length)]);
         }
 
-        // --- התאמות קריאה (רק רגילים) ---
+        // --- התאמות קריאה ---
         async function renderMatchesView() {
             if(currentUser.role !== 'User') return;
             const uSnap = await getDocs(collection(db, "users"));
@@ -912,7 +892,7 @@
             });
         }
 
-        // --- מערכת צ'אט (חוק תצוגה 3 + חוק פעולה 4) ---
+        // --- מערכת צ'אט ---
         window.initiateChatWith = function(peerUsername) {
             activeChatRecipient = peerUsername;
             switchView('chats');
@@ -927,9 +907,12 @@
                 const u = d.data();
                 if(u.username === currentUser.username) return;
 
-                // חוק 3 לתצוגה: רגילים רואים רק את שלהם. אדמינים רואים את שלהם ושל דרגות נמוכות מהם.
+                // חוק 3 לתצוגה: רגילים רואים רק את שלהם. אדמינים רואים הכל כי כולם יכולים להתכתב איתם עכשיו
                 if(currentUser.role !== 'User') {
-                    if(roleHierarchy[currentUser.role] < roleHierarchy[u.role]) return;
+                    // אדמינים רואים את כל המשתמשים ברשימת השיחות
+                } else {
+                    // רגיל רואה רק משתמשים רגילים אחרים כברירת מחדל
+                    if(u.role !== 'User') return;
                 }
 
                 const item = document.createElement('div');
@@ -981,14 +964,13 @@
             `;
         }
 
-        // --- ניהול פניות וכיבוי קבלת פניות (חוק 9) ---
+        // --- דיווחים ופניות ---
         async function renderReportsView() {
             if(currentUser.role === 'User') return;
             const snap = await getDocs(query(collection(db, "Reports"), where("status", "==", "Open")));
             const container = document.getElementById('reports-container');
             container.innerHTML = '';
 
-            // עדכון כפתור מצב קבלת פניות
             document.getElementById('toggle-accept-reports-btn').innerText = currentUser.receivingReports ? "🔌 כיבוי קבלת פניות" : "🔌 הפעלת קבלת פניות";
 
             snap.forEach(d => {
@@ -997,7 +979,6 @@
                 card.className = 'card';
                 
                 let actionButtons = '';
-                // אדמין רגיל לא יכול לאשר פניות של הצעות ספרים (חוק 7 של פעולות - רק אדמין+ וסופר)
                 if(rep.type === 'BookSuggestion' && !['Admin+', 'SuperAdmin'].includes(currentUser.role)) {
                     actionButtons = `<span style="color:var(--danger); font-size:12px;">ממתין לאדמין+ ומעלה</span>`;
                 } else {
@@ -1031,7 +1012,6 @@
                 }
             });
 
-            // חוק 9 לפעולות: הגבלות הכיבוי
             if(!targetState) {
                 if(uRole === 'Admin+' && countSameType < 1) {
                     return alert("לא ניתן לכבות! חייב להיות לפחות אדמין+ רגיל אחד פעיל שמקבל פניות במערכת.");
@@ -1047,7 +1027,7 @@
             renderReportsView();
         }
 
-        // --- צוות ניהול (חוק 8 / 10 / 20: רק לדרגות נמוכות משלהן) ---
+        // --- צוות ניהול ---
         async function renderAdminsView() {
             if(currentUser.role === 'User') return;
             const snap = await getDocs(collection(db, "users"));
@@ -1061,7 +1041,6 @@
                 const tr = document.createElement('tr');
                 let actions = '';
 
-                // בדיקה האם המשתמש המנוהל נמוך בדרגה מהמנהל המחובר
                 if(roleHierarchy[currentUser.role] > roleHierarchy[user.role]) {
                     actions = `
                         <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteAdminAccount('${user.username}')">מחק חשבון</button>
@@ -1080,7 +1059,6 @@
             const pass = document.getElementById('new-admin-password').value;
             const role = document.getElementById('new-admin-role').value;
 
-            // חוק 20: מנהל יכול לייצר חשבון רק בדרגה שנמוכה ממנו!
             if(roleHierarchy[currentUser.role] <= roleHierarchy[role]) {
                 return alert("אין לך הרשאה ליצור חשבון מנהל בדרגה שווה או גבוהה משלך.");
             }
@@ -1100,7 +1078,7 @@
             renderAdminsView();
         }
 
-        // --- יומן מערכת (חוק 10: מציג רק פעולות של דרגות נמוכות יותר) ---
+        // --- יומן מערכת ---
         async function renderSystemAuditLogsView() {
             if(currentUser.role === 'User') return;
             const q = query(collection(db, "ActivityLogs"), orderBy("epoch", "desc"));
@@ -1108,7 +1086,6 @@
             const container = document.getElementById('system-audit-logs');
             container.innerHTML = '';
 
-            // טעינת רשימת משתמשים כדי לדעת את הדרגה של מי שביצע את הפעולה
             const uSnap = await getDocs(collection(db, "users"));
             const userRolesMap = {};
             uSnap.forEach(docBox => { userRolesMap[docBox.data().username] = docBox.data().role; });
@@ -1117,8 +1094,7 @@
                 const log = d.data();
                 const operatorRole = userRolesMap[log.operator] || 'User';
 
-                // חוק 10 לפעולות: אדמין רגיל לא יכול לראות, ואדמינים אחרים רואים רק של דרגות נמוכות מהם
-                if(currentUser.role === 'Admin') return; // אדמין רגיל חסום לחלוטין לצפייה לפי ההערה האחרונה
+                if(currentUser.role === 'Admin') return; 
                 if(roleHierarchy[currentUser.role] <= roleHierarchy[operatorRole] && log.operator !== currentUser.username) return;
 
                 const li = document.createElement('li');
